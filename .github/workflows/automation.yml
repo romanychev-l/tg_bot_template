@@ -1,0 +1,72 @@
+name: "automate-all-the-things"
+
+on:
+  push:
+    branches:
+      - 'dev'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push bot Docker images
+        uses: docker/build-push-action@v5.1.0
+        with:
+          context: ./bot
+          push: true
+          tags: ghcr.io/lsd-learn-strive-develop/logarithm/bot:latest
+
+      # - name: Build and push flutter Docker images
+      #   uses: docker/build-push-action@v5.1.0
+      #   with:
+      #     context: ./flutter_web
+      #     push: true
+      #     tags: ghcr.io/lsd-learn-strive-develop/logarithm/flutter_web:latest
+
+      - name: Deploy to server via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          APPTOKEN: ${{ secrets.GITHUB_TOKEN }}
+          USERNAME: ${{ secrets.SSH_USER }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          envs: APPTOKEN,USERNAME
+          script: |
+            echo "Starting...";
+            cd prod/logarithm;
+            echo '--- GIT INFORMATION ---'
+            git checkout main;
+            git pull;
+
+            echo '--- DOCKER OPERATIONS ---';
+            echo '--- LIST OF DOCKER CONTAINERS BEFOREs STOPING DOCKER CONTAINERS ---';
+            docker ps;
+            docker compose down;
+            echo '--- LIST OF DOCKER CONTAINERS AFTER STOPING DOCKER CONTAINERS ---';
+            docker ps;
+
+            docker system prune --all --force;
+            
+            echo $APPTOKEN | docker login ghcr.io -u $USERNAME --password-stdin;
+            docker compose up -d;
+
+            # sudo rm -rf /var/www/html/logarithm/*;
+            # docker cp $(docker ps -q --filter ancestor=flutter_web):/app/build/web /var/www/html/logarithm/;

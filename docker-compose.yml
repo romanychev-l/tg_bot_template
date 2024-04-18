@@ -1,0 +1,7 @@
+version: "3.8"
+services:
+    bot:
+        image: ghcr.io/lsd-learn-strive-develop/logarithm/bot:latest
+        restart: "unless-stopped"
+        env_file: ".env"
+        network_mode: "host"
