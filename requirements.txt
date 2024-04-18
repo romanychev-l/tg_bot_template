@@ -1,0 +1,5 @@
+aiogram==3.4.1
+pymongo==4.5.0
+pydantic-settings==2.2.1
+aiogram_dialog==2.1.0
+fluentogram==1.1.6
