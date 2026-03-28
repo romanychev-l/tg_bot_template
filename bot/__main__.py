@@ -15,21 +15,20 @@ from bot.middlewares.i18n import TranslatorRunnerMiddleware
 from bot.utils.i18n import create_translator_hub
 
 logging.basicConfig(
-    level=logging.DEBUG,
-    format='[%(asctime)s] #%(levelname)-8s %(filename)s:'
-           '%(lineno)d - %(name)s - %(message)s'
+    level=config_settings.LOG_LEVEL,
+    format="[%(asctime)s] #%(levelname)-8s %(filename)s:"
+           "%(lineno)d - %(name)s - %(message)s",
 )
 
 logger = logging.getLogger(__name__)
 
 
 async def main() -> None:
-
     bot = Bot(
         token=config_settings.TOKEN.get_secret_value(),
-        default=DefaultBotProperties(parse_mode=ParseMode.HTML)
+        default=DefaultBotProperties(parse_mode=ParseMode.HTML),
     )
-    # await bot.delete_webhook(drop_pending_updates=True)
+
     dp = Dispatcher()
 
     translator_hub: TranslatorHub = create_translator_hub()
@@ -41,7 +40,13 @@ async def main() -> None:
     dp.update.middleware(TranslatorRunnerMiddleware())
 
     setup_dialogs(dp)
-    await dp.start_polling(bot, _translator_hub=translator_hub)
+
+    logger.info("Bot starting...")
+    try:
+        await dp.start_polling(bot, _translator_hub=translator_hub)
+    finally:
+        await bot.session.close()
+        logger.info("Bot stopped")
 
 
 asyncio.run(main())

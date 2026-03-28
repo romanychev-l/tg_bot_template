@@ -1,0 +1,12 @@
+.git
+.github
+.env
+.env.example
+__pycache__
+*.pyc
+*.pyo
+Makefile
+README.md
+LICENSE
+.dockerignore
+.gitignore
